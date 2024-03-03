@@ -37,12 +37,14 @@ Sensor Pins definitions
 #define THRESHOLD_MOISTURE_LEVEL 500
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 DHT dht(TEMPERATURE_PIN, DHT11);
+bool pumpSwitchState = false;
 
 /* Virtual pin for controlling blynk app */
 #define MOISTURE_VPIN V0
 #define PUMP_VPIN V1
 #define TEMPERATURE_VPIN V3
 #define HUMIDITY_VPIN V4
+#define SWITCH_VPIN V5
 
 // Blynk authentication token and WiFi credentials
 char auth[] = "x5UKdAPqJM-kocN5MrT3FZb8Abyf-uLp";
@@ -68,8 +70,9 @@ void setupTelegramBot();
 void fetchMoistureLevel();
 void sendMoistureToBlynk(int moistureLevel);
 void printMoistureOnLCD(int moistureLevel);
-void controlPump(int moistureLevel);
-void sendSMSAlert(const char *messageContent);
+void controlPumpBasedOnSwitch(int moistureLevel, bool pumpSwitchState);
+void controlPumpManually();
+void controlPumpAuto(int moistureLevel);
 
 void readTemperatureAndHumidity();
 void printTemperatureAndHumidityOnLCD(float temperature, float humidity);
@@ -80,11 +83,16 @@ void detectMotion();
 void handleMotionDetected();
 void handleMotionStopped();
 
+void sendSMSAlert(const char *messageContent);
+
 void setup()
 {
     Serial.begin(9600);
     initializePins();
+
     initializeBlynk();
+    Blynk.syncVirtual(SWITCH_VPIN);
+
     initializeLCD();
 }
 
@@ -188,15 +196,39 @@ void detectBirdUsingLaser(bool value)
 
 /* HANDLING MOISTURE */
 
+// Function to fetch moisture level and control pump
 void fetchMoistureLevel()
 {
     int moistureLevel = analogRead(MOISTURE_PIN);
     sendMoistureToBlynk(moistureLevel);
     printMoistureOnLCD(moistureLevel);
-    controlPump(moistureLevel);
+
+    // Check the stored virtual pin state and control the pump accordingly
+    controlPumpBasedOnSwitch(moistureLevel, pumpSwitchState);
 }
 
-void controlPump(int moistureLevel)
+void controlPumpBasedOnSwitch(int moistureLevel, bool pumpSwitchState)
+{
+    if (pumpSwitchState)
+    {
+        // Blynk switch is ON, manually control the pump
+        controlPumpManually();
+    }
+    else
+    {
+        // Blynk switch is OFF, control the pump based on moisture level
+        controlPumpAuto(moistureLevel);
+    }
+}
+
+void controlPumpManually()
+{
+    digitalWrite(RELAY_PUMP, HIGH); // Turn on the pump
+    const char *message = "PUMPING WATER: Manually Triggered";
+    sendSMSAlert(message);
+}
+
+void controlPumpAuto(int moistureLevel)
 {
     if (moistureLevel < THRESHOLD_MOISTURE_LEVEL)
     {
@@ -223,6 +255,13 @@ void printMoistureOnLCD(int moistureLevel)
     lcd.setCursor(0, 0);
     lcd.print("Moisture: ");
     lcd.print(moistureLevel);
+}
+
+BLYNK_WRITE(SWITCH_VPIN)
+{
+    pumpSwitchState = param.asInt();
+    int moistureLevel = analogRead(MOISTURE_PIN);
+    controlPumpBasedOnSwitch(moistureLevel, pumpSwitchState);
 }
 
 /* HANDLING TEMPERATURE and HUMIDITY */
@@ -278,7 +317,7 @@ void handleMotionDetected()
 {
     digitalWrite(LED_BUZZER, HIGH);
     printMotionStatus();
-    
+
     const char *message = "SOMEONE IN THE FARM";
     sendSMSAlert(message);
 }
