@@ -69,7 +69,7 @@ void fetchMoistureLevel();
 void sendMoistureToBlynk(int moistureLevel);
 void printMoistureOnLCD(int moistureLevel);
 void controlPump(int moistureLevel);
-void sendSMSAlert();
+void sendSMSAlert(const char *messageContent);
 
 void readTemperatureAndHumidity();
 void printTemperatureAndHumidityOnLCD(float temperature, float humidity);
@@ -165,13 +165,20 @@ void controlLEDAndBuzzer(bool state)
     }
 }
 
+void sendSMSAlert(const char *messageContent)
+{
+    bot.sendMessage(CHAT_ID, messageContent, "");
+}
+
 // Code to detect bird using laser
 void detectBirdUsingLaser(bool value)
 {
     if (value == true)
     {
         digitalWrite(LED_BUZZER, HIGH);
-        bot.sendMessage(CHAT_ID, "Warning!", "");
+
+        const char *message = "Warning: Birds In the farm!";
+        sendSMSAlert(message);
     }
     else if (value == false)
     {
@@ -194,11 +201,14 @@ void controlPump(int moistureLevel)
     if (moistureLevel < THRESHOLD_MOISTURE_LEVEL)
     {
         digitalWrite(RELAY_PUMP, HIGH); // Turn on the pump
-        sendSMSAlert();
+        const char *message = "PUMPING WATER: Moisture Low!";
+        sendSMSAlert(message);
     }
     else
     {
         digitalWrite(RELAY_PUMP, LOW); // Turn off the pump
+        const char *message = "PUMPING FINISHED";
+        sendSMSAlert(message);
     }
 }
 
@@ -267,10 +277,17 @@ void detectMotion()
 void handleMotionDetected()
 {
     digitalWrite(LED_BUZZER, HIGH);
-    sendSMSAlert();
+    printMotionStatus();
+    
+    const char *message = "SOMEONE IN THE FARM";
+    sendSMSAlert(message);
+}
+
+void printMotionStatus()
+{
     lcd.clear();
     lcd.setCursor(0, 0);
-    lcd.print("Warning: Motion");
+    lcd.print("Warning: Motion In Farm");
 }
 
 void handleMotionStopped()
