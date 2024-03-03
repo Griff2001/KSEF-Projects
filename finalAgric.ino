@@ -33,12 +33,10 @@ Sensor Pins definitions
 #define LASER_PIN D7
 #define LASER_RECEIVER_PIN D8
 
-
 // Constants and global decarations
 #define THRESHOLD_MOISTURE_LEVEL 500
-LiquidCrystal_I2C lcd(0x27, 16, 2); 
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 DHT dht(TEMPERATURE_PIN, DHT11);
-
 
 /* Virtual pin for controlling blynk app */
 #define MOISTURE_VPIN V0
@@ -46,12 +44,10 @@ DHT dht(TEMPERATURE_PIN, DHT11);
 #define TEMPERATURE_VPIN V3
 #define HUMIDITY_VPIN V4
 
-
 // Blynk authentication token and WiFi credentials
 char auth[] = "x5UKdAPqJM-kocN5MrT3FZb8Abyf-uLp";
 char ssid[] = "Wegner";
 char pass[] = "Wegner123!";
-
 
 // Message bot imports
 #define BOTtoken "7104950327:AAH5cCvaVY_-5Y_6Iugm69oyADxwJESaz-A"
@@ -80,6 +76,9 @@ void printTemperatureAndHumidityOnLCD(float temperature, float humidity);
 void sendHumidityToBlynk(int humidityLevel);
 void sendTemperatureToBlynk(int humidityLevel);
 
+void detectMotion();
+void handleMotionDetected();
+void handleMotionStopped();
 
 void setup()
 {
@@ -92,11 +91,21 @@ void setup()
 void loop()
 {
     // Get laser data
-    bool value = digitalRead(LASER_RECEIVER_PIN);
-    Serial.println(value);
+    bool birdDetected = digitalRead(LASER_RECEIVER_PIN);
+    Serial.println(birdDetected);
 
     // Monitor birds
-    detectBirdUsingLaser(value);
+    detectBirdUsingLaser(birdDetected);
+
+    // Monitor Bulgary & motion
+    detectMotion();
+
+    // Monitor Water Level
+    void fetchMoistureLevel();
+
+    // Monitor Temperature and Humidity
+    readTemperatureAndHumidity();
+
     Blynk.run();
 }
 
@@ -147,24 +156,14 @@ void setupTelegramBot()
     Serial.println("Telegram bot ready.");
 }
 
-
-void handleMotionDetected()
-{
-    // Code to handle motion detection
-}
-
-void handleMotionStopped()
-{
-    // Code to handle motion stopped
-}
-
 // Code to control LED and buzzer based on state
-void controlLEDAndBuzzer(bool state) {
-    if (!state) {
+void controlLEDAndBuzzer(bool state)
+{
+    if (!state)
+    {
         digitalWrite(LED_BUZZER, LOW);
     }
 }
-
 
 // Code to detect bird using laser
 void detectBirdUsingLaser(bool value)
@@ -180,36 +179,41 @@ void detectBirdUsingLaser(bool value)
     }
 }
 
-
 /* HANDLING MOISTURE */
 
-void fetchMoistureLevel() {
+void fetchMoistureLevel()
+{
     int moistureLevel = analogRead(MOISTURE_PIN);
     sendMoistureToBlynk(moistureLevel);
     printMoistureOnLCD(moistureLevel);
     controlPump(moistureLevel);
 }
 
-void controlPump(int moistureLevel) {
-    if (moistureLevel < THRESHOLD_MOISTURE_LEVEL) {
+void controlPump(int moistureLevel)
+{
+    if (moistureLevel < THRESHOLD_MOISTURE_LEVEL)
+    {
         digitalWrite(RELAY_PUMP, HIGH); // Turn on the pump
         sendSMSAlert();
-    } else {
+    }
+    else
+    {
         digitalWrite(RELAY_PUMP, LOW); // Turn off the pump
     }
 }
 
-void sendMoistureToBlynk(int moistureLevel) {
+void sendMoistureToBlynk(int moistureLevel)
+{
     Blynk.virtualWrite(PUMP_VPIN, moistureLevel);
 }
 
-void printMoistureOnLCD(int moistureLevel) {
+void printMoistureOnLCD(int moistureLevel)
+{
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Moisture: ");
     lcd.print(moistureLevel);
 }
-
 
 /* HANDLING TEMPERATURE and HUMIDITY */
 
@@ -217,7 +221,7 @@ void readTemperatureAndHumidity()
 {
     float temperatureLevel = dht.readTemperature();
     float humidityLevel = dht.readHumidity();
-    
+
     sendTemperatureToBlynk(temperatureLevel);
     sendHumidityToBlynk(humidityLevel);
 
@@ -234,10 +238,43 @@ void printTemperatureAndHumidityOnLCD(float temperature, float humidity)
     lcd.print("%");
 }
 
-void sendTemperatureToBlynk(int temperatureLevel) {
+void sendTemperatureToBlynk(int temperatureLevel)
+{
     Blynk.virtualWrite(TEMPERATURE_VPIN, temperatureLevel);
 }
 
-void sendHumidityToBlynk(int humidityLevel) {
+void sendHumidityToBlynk(int humidityLevel)
+{
     Blynk.virtualWrite(HUMIDITY_VPIN, humidityLevel);
+}
+
+/* HANDLING MOTION AND BULGARY */
+
+void detectMotion()
+{
+    bool motionDetected = digitalRead(PIR_PIN);
+
+    if (motionDetected)
+    {
+        handleMotionDetected();
+    }
+    else
+    {
+        handleMotionStopped();
+    }
+}
+
+void handleMotionDetected()
+{
+    digitalWrite(LED_BUZZER, HIGH);
+    sendSMSAlert();
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Warning: Motion");
+}
+
+void handleMotionStopped()
+{
+    digitalWrite(LED_BUZZER, LOW);
+    lcd.clear();
 }
