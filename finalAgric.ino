@@ -24,10 +24,6 @@ Sensor Pins definitions
     - laser receiever: D8
 */
 
-// Message bot imports
-#define BOTtoken "7104950327:AAH5cCvaVY_-5Y_6Iugm69oyADxwJESaz-A"
-#define CHAT_ID "6375833499"
-
 /* pin definitions*/
 #define MOISTURE_PIN A0
 #define RELAY_PUMP D6
@@ -37,15 +33,29 @@ Sensor Pins definitions
 #define LASER_PIN D7
 #define LASER_RECEIVER_PIN D8
 
-/*  Virtual pin for controlling blynk app*/
-#define LED_VPIN V2
-#define PUMP_VPIN V2
-#define HUMIDITY_VPIN V2
+
+// Constants and global decarations
+#define THRESHOLD_MOISTURE_LEVEL 500
+LiquidCrystal_I2C lcd(0x27, 16, 2); 
+DHT dht(TEMPERATURE_PIN, DHT11);
+
+
+/* Virtual pin for controlling blynk app */
+#define MOISTURE_VPIN V0
+#define PUMP_VPIN V1
+#define TEMPERATURE_VPIN V3
+#define HUMIDITY_VPIN V4
+
 
 // Blynk authentication token and WiFi credentials
 char auth[] = "x5UKdAPqJM-kocN5MrT3FZb8Abyf-uLp";
 char ssid[] = "Wegner";
 char pass[] = "Wegner123!";
+
+
+// Message bot imports
+#define BOTtoken "7104950327:AAH5cCvaVY_-5Y_6Iugm69oyADxwJESaz-A"
+#define CHAT_ID "6375833499"
 
 // Message bot initialiaztion
 X509List cert(TELEGRAM_CERTIFICATE_ROOT);
@@ -58,11 +68,18 @@ void initializeBlynk();
 void initializeLCD();
 void setupWiFi();
 void setupTelegramBot();
+
 void fetchMoistureLevel();
 void sendMoistureToBlynk(int moistureLevel);
 void printMoistureOnLCD(int moistureLevel);
 void controlPump(int moistureLevel);
 void sendSMSAlert();
+
+void readTemperatureAndHumidity();
+void printTemperatureAndHumidityOnLCD(float temperature, float humidity);
+void sendHumidityToBlynk(int humidityLevel);
+void sendTemperatureToBlynk(int humidityLevel);
+
 
 void setup()
 {
@@ -130,15 +147,6 @@ void setupTelegramBot()
     Serial.println("Telegram bot ready.");
 }
 
-void getTemperature()
-{
-    // Code to read temperature and print on LCD
-}
-
-void getHumidity()
-{
-    // Code to read humidity and print on LCD
-}
 
 void handleMotionDetected()
 {
@@ -192,7 +200,7 @@ void controlPump(int moistureLevel) {
 }
 
 void sendMoistureToBlynk(int moistureLevel) {
-    Blynk.virtualWrite(MOISTURE_VPIN, moistureLevel);
+    Blynk.virtualWrite(PUMP_VPIN, moistureLevel);
 }
 
 void printMoistureOnLCD(int moistureLevel) {
@@ -203,4 +211,33 @@ void printMoistureOnLCD(int moistureLevel) {
 }
 
 
-/* HANLING TEMPERATURE*/
+/* HANDLING TEMPERATURE and HUMIDITY */
+
+void readTemperatureAndHumidity()
+{
+    float temperatureLevel = dht.readTemperature();
+    float humidityLevel = dht.readHumidity();
+    
+    sendTemperatureToBlynk(temperatureLevel);
+    sendHumidityToBlynk(humidityLevel);
+
+    printTemperatureAndHumidityOnLCD(temperatureLevel, humidityLevel);
+}
+
+void printTemperatureAndHumidityOnLCD(float temperature, float humidity)
+{
+    lcd.setCursor(0, 1);
+    lcd.print("Temp: ");
+    lcd.print(temperature);
+    lcd.print(" C  Humidity: ");
+    lcd.print(humidity);
+    lcd.print("%");
+}
+
+void sendTemperatureToBlynk(int temperatureLevel) {
+    Blynk.virtualWrite(TEMPERATURE_VPIN, temperatureLevel);
+}
+
+void sendHumidityToBlynk(int humidityLevel) {
+    Blynk.virtualWrite(HUMIDITY_VPIN, humidityLevel);
+}
