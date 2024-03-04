@@ -40,11 +40,10 @@ DHT dht(TEMPERATURE_PIN, DHT11);
 bool pumpSwitchState = false;
 
 /* Virtual pin for controlling blynk app */
-#define MOISTURE_VPIN V0
-#define PUMP_VPIN V1
-#define TEMPERATURE_VPIN V3
-#define HUMIDITY_VPIN V4
-#define SWITCH_VPIN V5
+#define MOISTURE_VPIN V2
+#define TEMPERATURE_VPIN V1
+#define HUMIDITY_VPIN V0
+#define SWITCH_VPIN V3
 
 // Blynk authentication token and WiFi credentials
 char auth[] = "x5UKdAPqJM-kocN5MrT3FZb8Abyf-uLp";
@@ -135,8 +134,7 @@ void initializeBlynk()
 
 void initializeLCD()
 {
-    LiquidCrystal_I2C lcd(0x27, 16, 2);
-    lcd.init();
+    lcd.init(); // This initializes the local lcd object, not the global one
     lcd.backlight();
     lcd.clear();
     lcd.setCursor(0, 0);
@@ -246,7 +244,7 @@ void controlPumpAuto(int moistureLevel)
 
 void sendMoistureToBlynk(int moistureLevel)
 {
-    Blynk.virtualWrite(PUMP_VPIN, moistureLevel);
+    Blynk.virtualWrite(MOISTURE_VPIN, moistureLevel);
 }
 
 void printMoistureOnLCD(int moistureLevel)
