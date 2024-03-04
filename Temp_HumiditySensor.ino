@@ -16,14 +16,12 @@ char pass[] = "Wegner123!";
 #define HUMIDITY_VPIN V2
 #define TEMPERATURE_VPIN V1
 
-
 // Pin connected to the DHT sensor
-#define DHT_PIN 2
+#define TEMPERATURE_PIN D3
 #define DHT_TYPE DHT11
 
 
-
-DHT dht(DHT_PIN, DHT_TYPE);
+DHT dht(TEMPERATURE_PIN, DHT_TYPE);
 
 // Function prototypes
 void readTemperatureAndHumidity();
