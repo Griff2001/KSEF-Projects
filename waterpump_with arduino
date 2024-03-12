@@ -1,0 +1,19 @@
+//test for water pump using relay and moisture sensor, turns on and off the pump
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(2, OUTPUT);
+  digitalWrite(2, HIGH);
+  delay(1000);
+}
+
+void loop() {
+  int value = analogRead(A0);
+  Serial.println(value);
+  
+  if (value > 200) {
+    digitalWrite(2, HIGH); // Turn off the pump if moisture is above 450
+  } else {
+    digitalWrite(2, LOW); // Turn on the pump if moisture is below or equal to 450
+  }
+}
