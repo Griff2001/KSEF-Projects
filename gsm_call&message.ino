@@ -1,3 +1,5 @@
+//using node mcu
+
 #include <SoftwareSerial.h>
 
 #define GSM_TX D6  // Connect GSM module TX to NodeMCU D1
