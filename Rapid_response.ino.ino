@@ -11,7 +11,9 @@ SoftwareSerial gsmSerial(GSM_TX, GSM_RX);
 #define IN4  12
 
 const int analogInPin = A0;
+const int analogInPin2 = A2; // Second water sensor
 int sensorValue = 0;
+int sensorValue2 = 0; // Value from second water sensor
 
 int Steps = 0;
 boolean Direction = true;
@@ -21,6 +23,8 @@ int steps_left = 4095;
 long time;
 
 boolean smsSent = false; // Flag to check if SMS has been sent already
+boolean smsSent2 = false; // Flag to check if SMS for second sensor has been sent already
+boolean callMade2 = false; // Flag to check if call for second sensor has been made already
 
 void setup() {
   pinMode(IN1, OUTPUT); 
@@ -38,16 +42,20 @@ void setup() {
 }
 
 void loop() {
+  delay(1000); // Delay for 1 second before checking water level and activating motor
   sensorValue = analogRead(analogInPin);
-  Serial.print("sensor = ");
+  sensorValue2 = analogRead(analogInPin2);
+  
+  Serial.print("sensor1 = ");
   Serial.print(sensorValue);
   Serial.print("\n");
-  delay(1000);
+  Serial.print("sensor2 = ");
+  Serial.print(sensorValue2);
+  Serial.print("\n");
 
-  if ((sensorValue >= 340)) {
+  if (sensorValue >= 340) {
     digitalWrite(4, HIGH);
     digitalWrite(5, HIGH);
-    delay(5000);
     // Control stepper motor
     while (steps_left > 0) {
       currentMillis = micros();
@@ -78,6 +86,26 @@ void loop() {
     delay(100);
     // Reset SMS sent flag if water level is not high
     smsSent = false;
+  }
+
+  // Logic for second sensor
+  if (sensorValue2 >= 100 && sensorValue2 < 180) {
+    if (!smsSent2) {
+      sendSMS2();
+      smsSent2 = true; // Mark SMS as sent
+    }
+    callMade2 = false; // Reset call flag
+  } 
+  else if (sensorValue2 >= 200) {
+    if (!callMade2) {
+      makeCall2();
+      callMade2 = true; // Mark call as made
+    }
+    smsSent2 = false; // Reset SMS flag
+  } 
+  else {
+    smsSent2 = false; // Reset flags if water level is below threshold
+    callMade2 = false;
   }
 }
 
@@ -165,9 +193,24 @@ void sendSMS() {
   delay(1000);
   // Replace PHONE_NUMBER with the phone number you want to send the SMS to
   // Replace MESSAGE_CONTENT with the content of your message
-  gsmSerial.print("AT+CMGS=\"0717492935\"\r");
+  gsmSerial.print("AT+CMGS=\"0740390420\"\r");
   delay(1000);
-  gsmSerial.print("Water level high! Elevator activated.");
+  gsmSerial.print("Water level high! Motor activated.");
+  delay(100);
+  gsmSerial.write(26); // ASCII code for Ctrl+Z
+  delay(1000);
+}
+
+void sendSMS2() {
+  Serial.println("Sending SMS for second sensor...");
+  // AT command to set SMS mode
+  gsmSerial.println("AT+CMGF=1");
+  delay(1000);
+  // Replace PHONE_NUMBER with the phone number you want to send the SMS to
+  // Replace MESSAGE_CONTENT with the content of your message
+  gsmSerial.print("AT+CMGS=\"0740390420\"\r");
+  delay(1000);
+  gsmSerial.print("Second sensor: Water level high!");
   delay(100);
   gsmSerial.write(26); // ASCII code for Ctrl+Z
   delay(1000);
@@ -176,7 +219,15 @@ void sendSMS() {
 void makeCall() {
   Serial.println("Making call...");
   // AT command to make a call
-  gsmSerial.print("ATD+254717492935;");
+  gsmSerial.print("ATD+254740390420;");
+  delay(1000);
+  gsmSerial.println();
+}
+
+void makeCall2() {
+  Serial.println("Making call for second sensor...");
+  // AT command to make a call
+  gsmSerial.print("ATD+254740390420;");
   delay(1000);
   gsmSerial.println();
 }
