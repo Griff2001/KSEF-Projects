@@ -1,0 +1,80 @@
+#include <DHT.h>
+
+#define DHTPIN 9          // Pin where the DHT11 is connected
+#define DHTTYPE DHT11     // DHT 11
+#define TEMP_RELAY_PIN 5  // Pin where the relay for temperature control is connected
+#define TEMP_THRESHOLD 25 // Temperature threshold in Celsius
+
+#define trigPin 11        // Pin where the trig pin of the ultrasonic sensor is connected
+#define echoPin 10        // Pin where the echo pin of the ultrasonic sensor is connected
+#define buzzer 12         // Pin for the buzzer
+#define ledPin 13         // Pin for the LED
+#define DISTANCE_RELAY_PIN 6 // Pin where the relay for distance control is connected
+#define SAFETY_DISTANCE 5 // Distance threshold in cm
+
+DHT dht(DHTPIN, DHTTYPE);
+
+void setup() {
+  // Initialize pins for temperature control
+  pinMode(TEMP_RELAY_PIN, OUTPUT); 
+  digitalWrite(TEMP_RELAY_PIN, LOW); 
+
+  // Initialize pins for distance detection and control
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  pinMode(buzzer, OUTPUT);
+  pinMode(ledPin, OUTPUT);
+  pinMode(DISTANCE_RELAY_PIN, OUTPUT);
+  digitalWrite(DISTANCE_RELAY_PIN, LOW);
+
+  // Initialize DHT sensor
+  dht.begin(); 
+
+  // Start serial communication for debugging
+  Serial.begin(9600);
+}
+
+void loop() {
+  // Temperature sensing and control
+  float temperature = dht.readTemperature();
+
+  if (isnan(temperature)) {
+    Serial.println("Failed to read from DHT sensor!");
+  } else {
+    Serial.print("Temperature: ");
+    Serial.print(temperature);
+    Serial.println(" °C");
+
+    if (temperature > TEMP_THRESHOLD) {
+      digitalWrite(TEMP_RELAY_PIN, HIGH); // Turn on relay for high temperature
+    } else {
+      digitalWrite(TEMP_RELAY_PIN, LOW); // Turn off relay for normal temperature
+    }
+  }
+
+  // Distance sensing and control
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  long duration = pulseIn(echoPin, HIGH);
+  int distance = duration * 0.034 / 2;
+
+  Serial.print("Distance: ");
+  Serial.println(distance);
+
+  if (distance <= SAFETY_DISTANCE) {
+    digitalWrite(buzzer, HIGH);
+    digitalWrite(ledPin, HIGH);
+    digitalWrite(DISTANCE_RELAY_PIN, HIGH); // Turn on relay if object is detected
+  } else {
+    digitalWrite(buzzer, LOW);
+    digitalWrite(ledPin, LOW);
+    digitalWrite(DISTANCE_RELAY_PIN, LOW); // Turn off relay if no object is detected
+  }
+
+  delay(2000); // Wait a few seconds before the next loop iteration
+}
