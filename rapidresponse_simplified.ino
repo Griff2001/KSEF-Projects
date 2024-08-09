@@ -1,11 +1,11 @@
 #include <SoftwareSerial.h>
 
-#define GSM_TX 7  // Connect GSM module TX to NodeMCU D1
-#define GSM_RX 6  // Connect GSM module RX to NodeMCU D2
+#define GSM_TX 8  // Connect GSM module TX to NodeMCU D1
+#define GSM_RX 9  // Connect GSM module RX to NodeMCU D2
 
 SoftwareSerial gsmSerial(GSM_TX, GSM_RX);
 
-int FloatSensor = 11; // Pin connected to the float sensor
+int FloatSensor = 10; // Pin connected to the float sensor
 int ledLow = 4;       // Pin connected to the green LED (low water level)
 int ledMedium = 5;    // Pin connected to the yellow LED (medium water level)
 int ledHigh = 13;     // Pin connected to the red LED (high water level)
