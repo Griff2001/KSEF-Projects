@@ -53,43 +53,55 @@ void loop() {
   Serial.print(sensorValue2);
   Serial.print("\n");
 
-  if (sensorValue >= 340) {
+  if (sensorValue>= 340) {
     digitalWrite(4, HIGH);
     digitalWrite(5, HIGH);
     // Control stepper motor
     while (steps_left > 0) {
-      currentMillis = micros();
-      if (currentMillis - last_time >= 1000) {
-        stepper(1);
-        time = time + micros() - last_time;
-        last_time = micros();
-        steps_left--;
-      }
+        currentMillis = micros();
+        if (currentMillis - last_time >= 1000) {
+            stepper(1);
+            time = time + micros() - last_time;
+            last_time = micros();
+            steps_left--;
+        }
     }
     Serial.println(time);
-    Serial.println("Water level high. Activating motor!");
+    Serial.println("Hello, kindly be notified that the water level to the Dam is rising to a higher level!!");
+    
     // Send SMS if not already sent
     if (!smsSent) {
-      sendSMS();
-      smsSent = true; // Mark SMS as sent
+        sendSMS();
+        smsSent = true; // Mark SMS as sent
     }
     delay(1000);
     // Make a call
     makeCall();
     delay(2000); // Delay to ensure the call and SMS are completed
+    
     Direction = !Direction;
     steps_left = 4095;
-  } 
-  else {
-    digitalWrite(4, LOW);
+} 
+else if (sensorValue >= 50 && sensorValue <= 290) {
+    digitalWrite(3, HIGH); // Turn on LED connected to pin 3
+    digitalWrite(2, LOW);  // Turn off LED connected to pin 2
     digitalWrite(5, LOW);
+} 
+else {
+    digitalWrite(2, HIGH);  // Turn on LED connected to pin 2
+    digitalWrite(3, LOW);   // Turn off LED connected to pin 3
+    digitalWrite(5, LOW);
+    digitalWrite(4, LOW);
     delay(100);
+    
     // Reset SMS sent flag if water level is not high
     smsSent = false;
-  }
+}
 
-  // Logic for second sensor
+ 
+   // Logic for second sensor
   if (sensorValue2 >= 100 && sensorValue2 < 180) {
+    digitalWrite(5, HIGH);
     if (!smsSent2) {
       sendSMS2();
       smsSent2 = true; // Mark SMS as sent
@@ -97,6 +109,7 @@ void loop() {
     callMade2 = false; // Reset call flag
   } 
   else if (sensorValue2 >= 200) {
+    digitalWrite(5, HIGH);
     if (!callMade2) {
       makeCall2();
       callMade2 = true; // Mark call as made
@@ -106,6 +119,7 @@ void loop() {
   else {
     smsSent2 = false; // Reset flags if water level is below threshold
     callMade2 = false;
+     digitalWrite(5, LOW);
   }
 }
 
@@ -193,9 +207,9 @@ void sendSMS() {
   delay(1000);
   // Replace PHONE_NUMBER with the phone number you want to send the SMS to
   // Replace MESSAGE_CONTENT with the content of your message
-  gsmSerial.print("AT+CMGS=\"0740390420\"\r");
+  gsmSerial.print("AT+CMGS=\"0728530962\"\r");
   delay(1000);
-  gsmSerial.print("Water level high! Motor activated.");
+  gsmSerial.print("Hello, kindly be notified that the water flow towards the gauge is at a dangerous level!!");
   delay(100);
   gsmSerial.write(26); // ASCII code for Ctrl+Z
   delay(1000);
@@ -208,9 +222,9 @@ void sendSMS2() {
   delay(1000);
   // Replace PHONE_NUMBER with the phone number you want to send the SMS to
   // Replace MESSAGE_CONTENT with the content of your message
-  gsmSerial.print("AT+CMGS=\"0740390420\"\r");
+  gsmSerial.print("AT+CMGS=\"0728530962\"\r");
   delay(1000);
-  gsmSerial.print("Second sensor: Water level high!");
+  gsmSerial.print("Second sensor: Kindly be informed that the water level in the dam is at a higher level!!");
   delay(100);
   gsmSerial.write(26); // ASCII code for Ctrl+Z
   delay(1000);
@@ -219,7 +233,7 @@ void sendSMS2() {
 void makeCall() {
   Serial.println("Making call...");
   // AT command to make a call
-  gsmSerial.print("ATD+254740390420;");
+  gsmSerial.print("ATD+254728530962;");
   delay(1000);
   gsmSerial.println();
 }
@@ -227,7 +241,7 @@ void makeCall() {
 void makeCall2() {
   Serial.println("Making call for second sensor...");
   // AT command to make a call
-  gsmSerial.print("ATD+254740390420;");
+  gsmSerial.print("ATD+254728530962;");
   delay(1000);
   gsmSerial.println();
 }
